@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoberRata</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: black;
+      animation: rgbBackground 5s linear infinite;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-family: Arial, sans-serif;
+      animation: rgbText 2s linear infinite;
+    }
+
+    #counter {
+      color: white;
+      margin-top: 10px;
+      font-size: 1.2rem;
+      font-family: Arial, sans-serif;
+    }
+
+    video {
+      width: 300px;
+      height: auto;
+      border-radius: 20px;
+      cursor: pointer;
+      transform: rotate(0deg);
+      transition: transform 0.1s linear;
+      z-index: 2;
+    }
+
+    .random-video {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 10px;
+      animation: fadeOut 1.5s forwards;
+      pointer-events: none;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: scale(0.5); }
+    }
+
+    @keyframes rgbBackground {
+      0% { background-color: red; }
+      33% { background-color: green; }
+      66% { background-color: blue; }
+      100% { background-color: red; }
+    }
+
+    @keyframes rgbText {
+      0% { color: red; }
+      33% { color: green; }
+      66% { color: blue; }
+      100% { color: red; }
+    }
+  </style>
+</head>
+<body>
+  <h1 id="titulo">RoberRata</h1>
+  <video id="roberVideo" src="WhatsApp Video 2025-04-30 at 1.40.34 PM.mp4" autoplay muted loop></video>
+  <div id="counter">Clics: 0</div>
+
+  <script>
+    const video = document.getElementById('roberVideo');
+    const counterDisplay = document.getElementById('counter');
+    const body = document.body;
+    let angle = 0;
+    let speed = 0;
+    let clicks = 0;
+
+    function rotate() {
+      angle += speed;
+      video.style.transform = `rotate(${angle}deg)`;
+      requestAnimationFrame(rotate);
+    }
+
+    function getRandomPosition() {
+      const x = Math.random() * (window.innerWidth - 100);
+      const y = Math.random() * (window.innerHeight - 100);
+      return { x, y };
+    }
+
+    function spawnRandomVideo() {
+      const vid = document.createElement('video');
+      vid.src = 'WhatsApp Video 2025-04-30 at 1.40.34 PM.mp4';
+      vid.className = 'random-video';
+      vid.autoplay = true;
+      vid.muted = true;
+      vid.loop = true;
+      const { x, y } = getRandomPosition();
+      vid.style.left = `${x}px`;
+      vid.style.top = `${y}px`;
+      body.appendChild(vid);
+      setTimeout(() => vid.remove(), 1500);
+    }
+
+    video.addEventListener('click', () => {
+      clicks++;
+      counterDisplay.textContent = `Clics: ${clicks}`;
+      speed += 2;
+      if (speed > 20) speed = 20;
+      spawnRandomVideo();
+    });
+
+    setInterval(() => {
+      if (speed > 0) {
+        speed = Math.max(0, speed - 0.2);
+      }
+    }, 100);
+
+    rotate();
+  </script>
+</body>
+</html>
