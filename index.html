@@ -50,6 +50,32 @@
       pointer-events: none;
     }
 
+    #levelBarContainer {
+      width: 80%;
+      height: 20px;
+      background-color: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      position: absolute;
+      top: 20px;
+    }
+
+    #levelBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, cyan, lime);
+      transition: width 0.3s ease;
+    }
+
+    #levelText {
+      position: absolute;
+      top: 45px;
+      color: white;
+      font-size: 1.2rem;
+      font-family: Arial, sans-serif;
+    }
+
     @keyframes fadeOut {
       0% { opacity: 1; }
       100% { opacity: 0; transform: scale(0.5); }
@@ -72,6 +98,12 @@
 </head>
 <body>
   <h1 id="titulo">RoberRata</h1>
+
+  <div id="levelBarContainer">
+    <div id="levelBar"></div>
+  </div>
+  <div id="levelText">Nivel: 1</div>
+
   <video id="roberVideo" src="WhatsApp Video 2025-04-30 at 1.40.34 PM.mp4" autoplay muted loop></video>
   <div id="counter">Clics: 0</div>
 
@@ -79,9 +111,14 @@
     const video = document.getElementById('roberVideo');
     const counterDisplay = document.getElementById('counter');
     const body = document.body;
+    const levelBar = document.getElementById('levelBar');
+    const levelText = document.getElementById('levelText');
+
     let angle = 0;
     let speed = 0;
     let clicks = 0;
+    let level = 1;
+    const clicksForNextLevel = 10;
 
     function rotate() {
       angle += speed;
@@ -114,6 +151,15 @@
       counterDisplay.textContent = `Clics: ${clicks}`;
       speed += 2;
       if (speed > 20) speed = 20;
+
+      const progress = (clicks % clicksForNextLevel) / clicksForNextLevel * 100;
+      levelBar.style.width = `${progress}%`;
+
+      if (clicks % clicksForNextLevel === 0) {
+        level++;
+        levelText.textContent = `Nivel: ${level}`;
+      }
+
       spawnRandomVideo();
     });
 
