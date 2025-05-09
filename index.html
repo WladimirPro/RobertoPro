@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>RoberRata</title>
   <style>
     body {
@@ -48,6 +48,41 @@
       border-radius: 10px;
       animation: fadeOut 1.5s forwards;
       pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: yellow;
+      border-radius: 50%;
+      opacity: 1;
+      transition: all 1s ease-out;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .power-up {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: gold;
+      border: 2px solid white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 1rem;
+      color: black;
+      cursor: pointer;
+      z-index: 4;
+      font-family: Arial, sans-serif;
+    }
+
+    .power-timer {
+      font-size: 0.8rem;
+      color: black;
     }
 
     #levelBarContainer {
@@ -110,15 +145,23 @@
   <script>
     const video = document.getElementById('roberVideo');
     const counterDisplay = document.getElementById('counter');
-    const body = document.body;
     const levelBar = document.getElementById('levelBar');
     const levelText = document.getElementById('levelText');
+    const body = document.body;
 
     let angle = 0;
     let speed = 0;
-    let clicks = 0;
-    let level = 1;
-    const clicksForNextLevel = 10;
+    let totalClicks = parseInt(localStorage.getItem('totalClicks')) || 0;
+    let currentLevelClicks = 0;
+    let level = parseInt(localStorage.getItem('level')) || 1;
+    let nextLevelThreshold = 10 + (level - 1) * 5;
+
+    let clickMultiplier = 1;
+    let autoClicking = false;
+    let activeBuffs = {};
+
+    levelText.textContent = `Nivel: ${level}`;
+    counterDisplay.textContent = `Clics: ${totalClicks}`;
 
     function rotate() {
       angle += speed;
@@ -146,20 +189,122 @@
       setTimeout(() => vid.remove(), 1500);
     }
 
-    video.addEventListener('click', () => {
-      clicks++;
-      counterDisplay.textContent = `Clics: ${clicks}`;
+    function spawnParticles(x, y) {
+      for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        body.appendChild(particle);
+        setTimeout(() => {
+          particle.style.transform = `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px)`;
+          particle.style.opacity = 0;
+        }, 0);
+        setTimeout(() => particle.remove(), 1000);
+      }
+    }
+
+    function applyClick() {
+      totalClicks += clickMultiplier;
+      currentLevelClicks += clickMultiplier;
       speed += 2;
       if (speed > 20) speed = 20;
 
-      const progress = (clicks % clicksForNextLevel) / clicksForNextLevel * 100;
-      levelBar.style.width = `${progress}%`;
+      localStorage.setItem('totalClicks', totalClicks);
+      localStorage.setItem('level', level);
 
-      if (clicks % clicksForNextLevel === 0) {
+      counterDisplay.textContent = `Clics: ${totalClicks}`;
+      const progress = (currentLevelClicks / nextLevelThreshold) * 100;
+      levelBar.style.width = `${Math.min(progress, 100)}%`;
+
+      if (currentLevelClicks >= nextLevelThreshold) {
         level++;
         levelText.textContent = `Nivel: ${level}`;
+        currentLevelClicks = 0;
+        nextLevelThreshold += 5;
+        localStorage.setItem('level', level);
+      }
+    }
+
+    function startPowerUp(type, duration) {
+      if (activeBuffs[type]) {
+        activeBuffs[type].remaining += duration;
+        return;
       }
 
+      const timer = document.createElement('div');
+      timer.className = 'power-up';
+      timer.style.left = '10px';
+      timer.style.top = `${60 + Object.keys(activeBuffs).length * 70}px`;
+      timer.style.background = 'lightblue';
+
+      const label = document.createElement('div');
+      label.textContent = type;
+
+      const timeLeft = document.createElement('div');
+      timeLeft.className = 'power-timer';
+      timer.appendChild(label);
+      timer.appendChild(timeLeft);
+      body.appendChild(timer);
+
+      activeBuffs[type] = {
+        remaining: duration,
+        interval: setInterval(() => {
+          activeBuffs[type].remaining--;
+          timeLeft.textContent = `${activeBuffs[type].remaining}s`;
+          if (activeBuffs[type].remaining <= 0) {
+            clearInterval(activeBuffs[type].interval);
+            timer.remove();
+            if (type === 'x2' || type === 'x5') clickMultiplier = 1;
+            if (type === 'AUTO') autoClicking = false;
+            delete activeBuffs[type];
+          }
+        }, 1000)
+      };
+
+      // Activar efecto al inicio
+      if (type === 'x2') clickMultiplier = 2;
+      if (type === 'x5') clickMultiplier = 5;
+      if (type === 'AUTO') autoClicking = true;
+    }
+
+    function spawnPowerUp() {
+      const rand = Math.random();
+      let type = '';
+      if (rand < 0.6) type = 'x2';
+      else if (rand < 0.95) type = 'AUTO';
+      else type = 'x5';
+
+      const power = document.createElement('div');
+      power.className = 'power-up';
+      power.textContent = type;
+      const { x, y } = getRandomPosition();
+      power.style.left = `${x}px`;
+      power.style.top = `${y}px`;
+      body.appendChild(power);
+
+      power.addEventListener('click', () => {
+        if (type === 'x2') startPowerUp('x2', 10);
+        if (type === 'AUTO') startPowerUp('AUTO', 5);
+        if (type === 'x5') startPowerUp('x5', 7);
+        power.remove();
+      });
+
+      setTimeout(() => power.remove(), 7000);
+    }
+
+    setInterval(() => {
+      if (Math.random() < 0.01) spawnPowerUp();
+    }, 100);
+
+    setInterval(() => {
+      if (autoClicking) applyClick();
+    }, 250); // 4 clics por segundo
+
+    video.addEventListener('click', (e) => {
+      applyClick();
+      const rect = video.getBoundingClientRect();
+      spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
       spawnRandomVideo();
     });
 
